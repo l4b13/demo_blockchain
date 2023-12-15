@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flask Example</title>
+    <script type="text/javascript" src="{{ url_for('static', filename='web3.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='abi.js') }}"></script>
+</head>
+<body>
+    <h3>Здравствуйте, {{user.fio}}!</h3>
+    <label>Логин</label><h4>{{ login }}</h4>
+    <a href="/profile">Профиль</a>
+    <a href="/logout">Выйти</a>
+    <h4 id="balance"></h4>
+    <h4>Покупки</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Магазин</th>
+                <th>Наименование</th>
+                <th>Количество</th>
+                <th>Цена</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="buys"></tbody>
+    </table>
+    <h4>Возвраты</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Магазин</th>
+                <th>Наименование</th>
+                <th>Количество</th>
+                <th>Цена</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody id="rejects"></tbody>
+    </table>
+</body>
+<script>
+    let contractAdr = '0xfaB50350fE1c4257929EF21a5749d4d75BBc6AdA';
+    let web3 = new Web3('http://localhost:7545')
+    let contract = undefined;
+    let account = undefined;
+    let shops = undefined;
+    let status = ["Нет", "Покупка", "Запрос отправлен", "Запрос подтвержден", "Запрос откланен"];
+
+    function get_td(value)
+    {
+        let td = document.createElement("td");
+        td.innerHTML = value;
+        return td;
+    }
+
+    function get_button(id)
+    {
+        let b = document.createElement("button");
+        b.id = id;
+        b.innerHTML = "Возврат товара";
+        b.onclick = reject;
+        return b;
+    }
+
+    function reject(event)
+    {
+        let index = parseInt(event.target.id);
+        contract.methods.RejectPurchase(index).send({'from': account, 'gas': 3000000})
+        .on('receipt', receipt=>{
+            alert("Запрос на возврат товара успешно создан!");
+        })
+        .on('error', error=>{ alert(error); })
+        .catch(error=>{ alert(error); })
+    }
+
+    function get_row(purchase, index)
+    {
+        let row = document.createElement("tr");
+        row.appendChild(get_td((index+1).toString()));
+        row.appendChild(get_td(purchase["shop_name"]));
+        row.appendChild(get_td(purchase["item_name"]));
+        row.appendChild(get_td(purchase["amount"]));
+        row.appendChild(get_td(web3.utils.fromWei(purchase["price"], "ether") + " eth"));
+        row.appendChild(get_button(index.toString()));
+        return row;
+    }
+
+    function get_reject_row(reject, index)
+    {
+        let row = document.createElement("tr");
+        row.appendChild(get_td((index+1).toString()));
+        row.appendChild(get_td(reject["shop_name"]));
+        row.appendChild(get_td(reject["item_name"]));
+        row.appendChild(get_td(reject["amount"]));
+        row.appendChild(get_td(web3.utils.fromWei(reject["price"], "ether") + " eth"));
+        row.appendChild(get_td(status[reject["status"]]));
+        return row;
+    }
+
+    window.onload = (e) => {
+        contract = new web3.eth.Contract(abi, contractAdr);
+
+        ethereum.request({'method':'eth_requestAccounts'})
+        .then(accounts=>{
+            account = accounts[0];
+            web3.eth.getBalance(account)
+            .then(balance=>{
+                let h = document.getElementById("balance");
+                h.innerHTML = web3.utils.fromWei(balance, "ether") + "eth";
+            })
+            .catch(error=>{ alert(error); });
+
+            contract.methods.GetMyPurchases().call({'from':account})
+            .then(data=>{
+                let table = document.getElementById("buys");
+                data.forEach((purchase, index)=>{
+                    table.appendChild(get_row(purchase, index));
+                });
+            })
+            .catch(error=>{ alert(error);});
+
+            contract.methods.GetMyRejects().call({'from': account})
+            .then(data=>{
+                let table = document.getElementById("rejects");
+                data.forEach((reject, index)=>{
+                    table.appendChild(get_reject_row(reject, index));
+                });
+            })
+            .catch(error=>{ alert(error); })
+        })
+        .catch(error=>{ alert(error); });
+    }    
+</script>
+</html>

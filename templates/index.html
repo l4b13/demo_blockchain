@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flask Example</title>
+    <script type="text/javascript" src="{{ url_for('static', filename='web3.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='abi.js') }}"></script>
+</head>
+<body>
+    {% if error %}
+    <h2>{{error}}</h2>
+    {% endif %}
+    <form action="" method="post">
+        <label for="login">Логин</label>
+        <input type="text" name="login" id="login" value="" placeholder="Введите ваш логин" />
+        <label for="pwd">Логин</label>
+        <input type="password" name="pwd" id="pwd" value="" />
+        <button type="submit">Войти</button>
+    </form>
+</body>
+<script></script>
+</html>

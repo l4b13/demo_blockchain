@@ -1,0 +1,30 @@
+
+{"semen": {
+    "fio":"Семенов Семен Семенович",
+    "account": "",
+    "employee": true,
+    "role":1,
+    "pwd": "123"
+    },
+    "roman": {
+    "fio":"",
+    "account": "",
+    "employee": true,
+    "role":1,
+    "pwd": "456"
+    },
+    "dima": {
+    "fio":"Дмитриев Дмитрий Дмитриевич",
+    "account": "",
+    "employee": false,
+    "role":0,
+    "pwd": "456"
+    },
+    "vasya": {
+    "fio":"",
+    "account": "",
+    "employee": false,
+    "role":0,
+    "pwd": "456"
+    }
+    }

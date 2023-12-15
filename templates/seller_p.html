@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flask Example</title>
+    <script type="text/javascript" src="{{ url_for('static', filename='web3.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='abi.js') }}"></script>
+</head>
+<body>
+    <h3>Здравствуйте, {{user.fio}}!</h3>
+    <label>Логин</label><h4>{{ login }}</h4>
+    <a href="/profile">Профиль</a>
+    <a href="/change_role">Поменять роль</a>
+    <a href="/logout">Выйти</a>
+    <h4 id="balance"></h4>
+    <label>город</label> <h4 id="city"></h4>
+    <label>магазин</label> <h4 id="shop"></h4>
+    <table>
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Клиент</th>
+                <th>Наименование</th>
+                <th>Количество</th>
+                <th>Цена</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+    </table>
+</body>
+<script>
+    let contractAdr = '0xfaB50350fE1c4257929EF21a5749d4d75BBc6AdA';
+    let web3 = new Web3('http://localhost:7545')
+    let contract = undefined;
+    let account = undefined;
+    let shops = undefined;
+
+    function getTD(value)
+    {
+        let td = document.createElement("td");
+        td.innerHTML = value;
+        return td;
+    }
+
+    function getRow(reject, index)
+    {
+        let row = document.createElement('tr');
+        row.appendChild(getTD((index+1).toString()));
+        row.appendChild(getTD(reject["customer"]));
+        row.appendChild(getTD(reject["item_name"]));
+        row.appendChild(getTD(reject["amount"]));
+        row.appendChild(getTD(reject["price"]));
+        row.appendChild(getTD(""));
+        row.appendChild(getTD(""));
+        return row;
+    }
+
+    window.onload = (e) => {
+        contract = new web3.eth.Contract(abi, contractAdr);
+
+        ethereum.request({'method':'eth_requestAccounts'})
+        .then(accounts=>{
+            account = accounts[0];
+            web3.eth.getBalance(account)
+            .then(balance=>{
+                let h = document.getElementById("balance");
+                h.innerHTML = web3.utils.fromWei(balance, "ether") + "eth";
+            })
+            .catch(error=>{ alert(error); });
+
+            contract.methods.GetShops().call()
+            .then(data=>{
+                shops = data;
+                contract.methods.GetEmployeeShop().call({"from": account})
+                .then(data=>{
+                    for(let i=0;i<shops.length;i++)
+                        if(shops[i]['account'] == data)
+                        {
+                            let h = document.getElementById("city");
+                            h.innerHTML = shops[i]["city"];
+                            h = document.getElementById("shop");
+                            h.innerHTML = shops[i]["name"];
+                        }
+                })
+                .catch(error=>{ alert(error); });
+            })
+            .catch(error=>{ alert(error); });
+
+            contract.methods.GetShopRejects().call({"from": account})
+            .then(data=>{
+                let table = document.getElementById("tbody");
+                data.forEach((reject, index)=>{
+                    table.appendChild(getRow(reject, index));
+                });
+            })
+            .catch(error=>{ alert(error); });
+        })
+        .catch(error=>{
+            alert(error);
+        });
+    }
+</script>
+</html>

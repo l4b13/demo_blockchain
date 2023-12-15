@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller page</title>
+    <script type="text/javascript" src="{{ url_for('static', filename='web3.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='abi.js') }}"></script>
+</head>
+<body>
+    <h1>Hello {{user.fio}}!</h1>
+    <h4 id="balance"></h4>
+    <table>
+        <thead>
+            <tr>
+                <th>№ магазина</th>
+                <th>№ товара</th>
+                <th>Наименование</th>
+                <th>Ед. измерения</th>
+                <th>Цена</th>
+                <th>Количество</th>
+                <th>Купить</th>
+                <th>Оценить</th>
+            </tr>
+        </thead>
+        <tbody id="items">
+        </tbody>
+    </table>
+    <div id="test"></div>
+</body>
+<script>
+    let contractAdr = '0x9B6C5D391BA7330E93A35819620a69b7692Fa6e1';
+    let web3 = new Web3('http://localhost:7545')
+    let contract = undefined;
+    let account = undefined;
+    let units = undefined;
+
+    function GetTD(name)
+    {
+        let td = document.createElement("td");
+        td.innerHTML = name;
+        return td;
+    }
+
+    function CreateButton(name, click_func, shop, index)
+    {
+        let inp = document.createElement("input");
+        inp.type = "text";
+        inp.value = "1";
+        inp.style = "width: 30px;"
+        let b = document.createElement("button");
+        b.innerHTML=name;
+        b.id = shop + '-' + index;
+        b.onclick = click_func;
+        td = document.createElement("td");
+        td.appendChild(inp);
+        td.appendChild(b);
+        return td;
+    }
+
+    function BuyItemClick(event)
+    {
+        console.log("Buy click");
+        let a = event.target.id.split('-');
+        console.log(a[0]);
+        console.log(a[1]);
+    }
+
+    function GradeItemClick(event)
+    {
+        console.log("Grade click");
+        let a = event.target.id.split('-');
+        console.log(a[0]);
+        console.log(a[1]);
+    }
+
+    function GetRow(item, index, shopname, shop_acc)
+    {
+        let tr = document.createElement("tr");
+        tr.appendChild(GetTD(shopname));
+        tr.appendChild(GetTD(index.toString()));
+        tr.appendChild(GetTD(item['name']));
+        tr.appendChild(GetTD(units[item['unit']]));
+        tr.appendChild(GetTD(web3.utils.fromWei(item['price']) + "eth"));
+        tr.appendChild(GetTD(item['amount']));
+        tr.appendChild(CreateButton("Купить", BuyItemClick, shop_acc, index));
+        tr.appendChild(CreateButton("Оценить", GradeItemClick, shop_acc, index));
+        return tr;
+    }
+
+    window.onload = (e) => {
+        contract = new web3.eth.Contract(abi, contractAdr);
+        ethereum.request({'method':'eth_requestAccounts'})
+        .then(accounts=>{
+            account = accounts[0];
+            web3.eth.getBalance(account).then(balance=>{
+                let h = document.getElementById("balance");
+                let bal = web3.utils.fromWei(balance);
+                h.innerHTML = "У вас " + bal.slice(0, bal.indexOf('.')+5) + " ether";
+            });
+        });
+
+        contract.methods.GetShops().call()
+        .then(data=>{
+            console.log(data);
+            data.forEach((element, shop_index)=>{
+                contract.methods.GetItems(element.account).call()
+                .then(data=>{
+                    console.log(data);
+                    tbody = document.getElementById("items");
+                    data.forEach((item, index) => {
+                        let row = GetRow(item, index+1, (shop_index+1).toString(), element.account);
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error=>{ alert(error); })
+            })
+        })
+        .catch(error=>{
+            alert(error);
+        });
+
+        contract.methods.GetUnits().call()
+        .then(data=>{ units = data; })
+        .catch(error=>{ alert(error); });
+    }
+</script>
+</html>
+ 
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller page</title>
+    <script type="text/javascript" src="{{ url_for('static', filename='web3.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='abi.js') }}"></script>
+</head>
+<body>
+    <h1>Hello {{user.fio}}!</h1>
+    <h4 id="balance"></h4>
+    <table>
+        <thead>
+            <tr>
+                <th>№ магазина</th>
+                <th>№ товара</th>
+                <th>Наименование</th>
+                <th>Ед. измерения</th>
+                <th>Цена</th>
+                <th>Количество</th>
+                <th>Купить</th>
+                <th>Оценить</th>
+            </tr>
+        </thead>
+        <tbody id="items">
+        </tbody>
+    </table>
+    <div id="test"></div>
+</body>
+<script>
+    let contractAdr = '0x9B6C5D391BA7330E93A35819620a69b7692Fa6e1';
+    let web3 = new Web3('http://localhost:7545')
+    let contract = undefined;
+    let account = undefined;
+    let units = undefined;
+
+    function GetTD(name)
+    {
+        let td = document.createElement("td");
+        td.innerHTML = name;
+        return td;
+    }
+
+    function CreateButton(name, click_func, shop, index)
+    {
+        let inp = document.createElement("input");
+        inp.type = "text";
+        inp.value = "1";
+        inp.style = "width: 30px;"
+        let b = document.createElement("button");
+        b.innerHTML=name;
+        b.id = shop + '-' + index;
+        b.onclick = click_func;
+        td = document.createElement("td");
+        td.appendChild(inp);
+        td.appendChild(b);
+        return td;
+    }
+
+    function BuyItemClick(event)
+    {
+        console.log("Buy click");
+        let a = event.target.id.split('-');
+        console.log(a[0]);
+        console.log(a[1]);
+    }
+
+    function GradeItemClick(event)
+    {
+        console.log("Grade click");
+        let a = event.target.id.split('-');
+        console.log(a[0]);
+        console.log(a[1]);
+    }
+
+    function GetRow(item, index, shopname, shop_acc)
+    {
+        let tr = document.createElement("tr");
+        tr.appendChild(GetTD(shopname));
+        tr.appendChild(GetTD(index.toString()));
+        tr.appendChild(GetTD(item['name']));
+        tr.appendChild(GetTD(units[item['unit']]));
+        tr.appendChild(GetTD(web3.utils.fromWei(item['price']) + "eth"));
+        tr.appendChild(GetTD(item['amount']));
+        tr.appendChild(CreateButton("Купить", BuyItemClick, shop_acc, index));
+        tr.appendChild(CreateButton("Оценить", GradeItemClick, shop_acc, index));
+        return tr;
+    }
+
+    window.onload = (e) => {
+        contract = new web3.eth.Contract(abi, contractAdr);
+        ethereum.request({'method':'eth_requestAccounts'})
+        .then(accounts=>{
+            account = accounts[0];
+            web3.eth.getBalance(account).then(balance=>{
+                let h = document.getElementById("balance");
+                let bal = web3.utils.fromWei(balance);
+                h.innerHTML = "У вас " + bal.slice(0, bal.indexOf('.')+5) + " ether";
+            });
+        });
+
+        contract.methods.GetShops().call()
+        .then(data=>{
+            console.log(data);
+            data.forEach((element, shop_index)=>{
+                contract.methods.GetItems(element.account).call()
+                .then(data=>{
+                    console.log(data);
+                    tbody = document.getElementById("items");
+                    data.forEach((item, index) => {
+                        let row = GetRow(item, index+1, (shop_index+1).toString(), element.account);
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error=>{ alert(error); })
+            })
+        })
+        .catch(error=>{
+            alert(error);
+        });
+
+        contract.methods.GetUnits().call()
+        .then(data=>{ units = data; })
+        .catch(error=>{ alert(error); });
+    }
+</script>
+</html>

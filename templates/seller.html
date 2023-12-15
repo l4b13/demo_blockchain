@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller page</title>
+    <script type="text/javascript" src="{{ url_for('static', filename='web3.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='abi.js') }}"></script>
+</head>
+<body>
+    <h3>Здравствуйте, {{user.fio}}!</h3>
+    <h4 id="balance"></h4>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Наименование</th>
+                <th>Ед. измерения</th>
+                <th>Цена</th>
+                <th>Количество</th>
+            </tr>
+        </thead>
+        <tbody id="items">
+        </tbody>
+    </table>
+    <div>
+        <label for="name">Наименование</label>
+        <input type="text" name="name" id="name"/><br>
+        <label for="unit">Ед. измерения</label>
+        <select name="unit" id="unit">
+            <option value="0">Шт</option>
+            <option value="1">кг</option>
+            <option value="2">л</option>
+            <option value="3">м</option>
+        </select><br>
+        <label for="price">Цена (в wei)</label>
+        <input type="text" name="price" id="price"/><br>
+        <label for="amount">Количество</label>
+        <input type="text" name="amount" id="amount"/><br>
+        <button onclick="AddItem()">Добавить</button>
+    </div>
+</body>
+<script>
+    let contractAdr = '0x9B6C5D391BA7330E93A35819620a69b7692Fa6e1';
+    let web3 = new Web3('http://localhost:7545')
+    let contract = undefined;
+    let account = undefined;
+    let units = undefined;
+    function CreateRow(item, index)
+    {
+        let row = document.createElement("tr");
+        let td1 = document.createElement("td");
+        td1.innerHTML = (index+1).toString();
+        row.appendChild(td1);
+        let td2 = document.createElement("td");
+        td2.innerHTML = item['name'];
+        row.appendChild(td2);
+        let td3 = document.createElement("td");
+        td3.innerHTML = units[parseInt(item['unit'])];
+        row.appendChild(td3);
+        let td4 = document.createElement("td");
+        td4.innerHTML = web3.utils.fromWei(item['price']) + ' eth';
+        row.appendChild(td4);
+        let td5 = document.createElement("td");
+        td5.innerHTML = item['amount'];
+        row.appendChild(td5);
+        return row;
+    }
+
+    function AddItem()
+    {
+        let name = document.getElementById('name').value;
+        let unit = document.getElementById('unit').value;
+        let price = document.getElementById('price').value;
+        let amount = document.getElementById('amount').value;
+        console.log(name, unit, price, amount);
+        if (name.length < 1 || unit.length < 1 || price.length < 1 || amount.length < 1)
+        {
+            alert('Форма не до конца заполнена!');
+            return;
+        }
+        contract.methods.AddItem(name, unit, price, amount).send({'gas': 3000000, 'from': account})
+        .on('receipt', receipt=>{
+            console.log(receipt);
+            alert("Товар успешно добавлен!");
+            let body = document.getElementById('items');
+            let name = document.getElementById('name').value;
+            let unit = document.getElementById('unit').value;
+            let price = document.getElementById('price').value;
+            let amount = document.getElementById('amount').value;
+            let index = body.children.length;
+            let row = CreateRow({'name': name, 'unit': unit, 'price':price, 'amount':amount}, index);
+            body.appendChild(row);
+        })
+        .on('error', (error, receipt)=>{
+            alert(error);
+        })
+        .catch(error=>{
+            alert(error);
+        })
+    }
+
+    window.onload = (e) => {
+        contract = new web3.eth.Contract(abi, contractAdr);
+        ethereum.request({'method':'eth_requestAccounts'})
+        .then(accounts=>{
+            account = accounts[0];
+            web3.eth.getBalance(account).then(balance=>{
+                let h = document.getElementById("balance");
+                let bal = web3.utils.fromWei(balance);
+                h.innerHTML = "У вас " + bal.slice(0, bal.indexOf('.')+5) + " ether";
+            });
+
+            contract.methods.GetEmployeeShop().call({'from': account})
+            .then(data=>{
+                contract.methods.GetItems(data).call({'from': account})
+                .then(items=>{
+                    let body = document.getElementById('items');
+                    items.forEach((element, index)=>{
+                        let row = CreateRow(element, index);
+                        body.appendChild(row);
+                    });
+                })
+                .catch(error=>{
+                    alert(error);
+                });
+            })
+            .catch(error=>{
+                alert(error);
+            });
+        });
+        contract.methods.GetUnits().call()
+        .then(data=>{
+            units = data;
+            let sel = document.getElementById("unit");
+            while(sel.options.length > 0) sel.remove(0);
+            data.forEach((element, index)=>{
+                let opt = document.createElement("option");
+                opt.value = index;
+                opt.innerHTML = element;
+                sel.appendChild(opt);
+            });
+        });
+
+        //contract.methods.
+    }
+</script>
+</html>
